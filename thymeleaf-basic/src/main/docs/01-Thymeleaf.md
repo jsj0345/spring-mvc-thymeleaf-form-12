@@ -727,3 +727,522 @@ ${nullData}?: _ = 데이터가 없습니다.
 - Elvis 연산자 : 조건식의 편의 버전(내용물이 있으면 그대로 나옴.) 
 - No-Operaition : `_`인 경우 마치 타임리프가 실행되지 않는 것 처럼 동작한다. 
 이것을 잘 사용하면 HTML의 내용 그대로 활용할 수 있다. 마지막 예를 보면 데이터가 없습니다. 부분이 그대로 출력된다.
+
+### 7. 속성 값 설정
+**타임리프 태그 속성(attribute)**
+
+타임리프는 주로 HTML 태그에 `th:*` 속성을 지정하는 방식으로 동작한다. `th:*`로 속성을 적용하면 기존 속성을 대체한다.
+기존 속성이 없으면 새로 만든다.
+
+`/resources/templates/basic/attribute.html`
+```html
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+    <h1>속성 설정</h1>
+    <input type="text" name="mock" th:name="userA"/>
+
+    <h1>속성 추가</h1>
+    - th : attrappend = <input type="text" class="text" th:attrappend="class='large'"/><br/>
+    - th : attrprepend = <input type="text" class="text" th:attrprepend="class='large '"/><br/>
+    - th : classappend = <input type="text" class="text" th:classappend="large"/><br/>
+
+    <h1>checked 처리</h1>
+    - checked o <input type="checkbox" name="active" th:checked="true"><br/>
+    - checked x <input type="checkbox" name="active" th:checked="false"><br/>
+    - checked=false <input type="checkbox" name="active" checked="false"><br/>
+</body>
+
+</html>
+```
+**속성 설정**
+`th:*` 속성을 지정하면 타임리프는 기존 속성을 `th:*`로 지정한 속성으로 대체한다.
+기존 속성이 없다면 새로 만든다.
+`<input type="text" name="mock" th:name="userA"/>`
+-> 타임리프 렌더링 후 `<input type="text" name="userA"/>`
+
+**속성 추가**
+`th:attrappend` : 속성 값의 뒤에 값을 추가한다.
+`th:attrprepend` : 속성 값의 앞에 값을 추가한다.
+`th:classappend` : class 속성에 자연스럽게 추가한다. 
+
+**checked 처리**
+HTML에서는 `<input type="checkbox" name="active" checked="false"/>` -> 이 경우에도
+checked 속성이 있기 때문에 checked 처리가 되어버린다.
+
+HTML에서는 `checked` 속성은 `checked` 속성의 값과 상관없이 `checked`라는 속성만 있어도 체크가 된다.
+이런 부분이 `true`, `false` 값을 주로 사용하는 개발자 입장에서는 불편하다.
+-> 타임리프 렌더링 후 : `<input type="checkbox" name="active"/>`
+
+### 8. 반복
+타임리프에서 반복은 `th:each`를 사용한다. 추가로 반복에서 사용할 수 있는 여러 상태 값을 지원한다.
+
+**BasicController 추가**
+
+```java
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.GetMapping;
+
+import java.util.ArrayList;
+import java.util.List;
+
+@GetMapping("/each")
+public String each(Model model) {
+  addUsers(model);
+  return "basic/each";
+}
+
+private void addUsers(Model model) {
+  List<User> list = new ArrayList<>();
+  list.add(new User("userA", 10));
+  list.add(new User("userB", 20));
+  list.add(new User("userC", 30));
+  
+  model.addAttribute("users", list); 
+}
+```
+
+`/resources/templates/basic/each.html`
+```html
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+<h1>기본 테이블</h1>
+<table border="1">
+    <tr>
+        <th>username</th>
+        <th>age</th>
+    </tr>
+    <tr th:each="user : ${users}">
+        <td th:text="${user.username}">username</td>
+        <td th:text="${user.age}">0</td>
+    </tr>
+</table>
+
+<h1>반복 상태 유지</h1>
+
+<table border="1">
+    <tr>
+        <th>count</th>
+        <th>username</th>
+        <th>age</th>
+        <th>etc</th>
+    </tr>
+    
+    <tr th:each="user, userStat : ${users}">
+        <td th:text="${userStat.count}">username</td>
+        <td th:text="${user.username}">username</td>
+        <td th:text="${user.age}">0</td>
+        <td>
+            index = <span th:text="${userStat.index}"></span>
+            count = <span th:text="${userStat.count}"></span>
+            size = <span th:text="${userStat.size}"></span>
+            even? = <span th:text="${userStat.even}"></span>
+            odd? = <span th:text="${userStat.odd}"></span>
+            first? = <span th:text="${userStat.first}"></span>
+            last? = <span th:text="${userStat.last}"></span>
+            current = <span th:text="${userStat.current}"></span>
+        </td>
+    </tr>
+</table>
+</body>
+</html>
+```
+
+**반복 기능**
+`<tr th:each="user : ${users}">`
+- 반복 시 오른쪽 컬렉션 (`${users}`)의 값을 하나씩 꺼내서 왼쪽 변수 (`user`)에 담아서 태그를 반복 실행합니다.
+- `th:each`는 `List`뿐만 아니라 배열, `java.util.Iterable`, `java.util.Enumeration`을 구현한 모든 객체를
+반복에 사용할 수 있습니다. `Map`도 사용할 수 있는데 이 경우 변수에 담기는 값은 `Map.Entry`입니다. 
+
+**반복 상태 유지**
+`<tr th:each="user, userStat : ${users}">`
+반복의 두번째 파라미터를 설정해서 반복의 상태를 확인 할 수 있습니다. 
+두번째 파라미터는 생략 가능한데, 생략하면 지정한 변수명(`user`) + `Stat`가 됩니다.
+여기서는 `user` + `Stat` = `userStat` 이므로 생략 가능합니다.
+
+**반복 상태 유지 기능**
+- `index` : 0부터 시작하는 값
+- `count` : 1부터 시작하는 값
+- `size` : 전체 사이즈
+- `even, odd` : 홀수, 짝수 여부(`boolean`)
+- `first`, `last` : 처음, 마지막 여부(`boolean`)
+- `current` : 현재 객체 
+
+### 9. 조건부 평가
+타임리프의 조건식
+`if`, `unless`(`if`의 반대)
+
+**BasicController 추가**
+```java
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.GetMapping;
+
+@GetMapping("/condition")
+public String condition(Model model) {
+  addUsers(model);
+  return "basic/condition"; 
+}
+```
+
+```html
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+<h1>if, unless</h1>
+<table border="1">
+    <tr>
+        <th>count</th>
+        <th>username</th>
+        <th>age</th>
+    </tr>
+    
+    <tr th:each="user, userStat : ${users}">
+        <td th:text="${userStat.count}">1</td>
+        <td th:text="${user.username}">username</td>
+        <td>
+            <span th:text="${user.age}">0</span>
+            <span th:text="'미성년자'" th:if="${user.age lt 20}"></span>
+            <span th:text="'미성년자'" th:unless="${user.age ge 20}"></span>
+        </td>
+    </tr>
+</table>
+
+<h1>switch</h1>
+<table border="1">
+    <tr>
+        <th>count</th>
+        <th>username</th>
+        <th>age</th>
+    </tr>
+    
+    <tr th:each="user, userStat : ${users}">
+        <td th:text="${userStat.count}">1</td>
+        <td th:text="${user.username}">username</td>
+        <td th:switch="${user.age}">
+            <span th:case="10">10살</span>
+            <span th:case="20">20살</span>
+            <span th:case="*">기타</span>
+        </td>
+    </tr>
+</table>
+</body>
+</html>
+```
+
+**if, unless**
+타임리프는 해당 조건이 맞지 않으면 태그 자체를 렌더링하지 않는다.
+만약 다음 조건이 `false`인 경우, `<span>...<span>`부분 자체가 렌더링 되지 않고 사라진다.
+`<span th:text="'미성년자'" th:if="${user.age lt 20}></span>`
+
+`th:if` : 조건식이 참(True)일 때, 태그를 출력. 
+`th:unless` : 조건식이 거짓(False)일 때, 태그를 출력. 
+
+**switch**
+`*`은 만족하는 조건이 없을 때 사용하는 디폴트이다. 
+
+렌더링 결과는 다음과 같다.
+```text
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+<h1>if, unless</h1>
+<table border="1">
+    <tr>
+        <th>count</th>
+        <th>username</th>
+        <th>age</th>
+    </tr>
+
+    <tr>
+        <td>1</td>
+        <td>UserA</td>
+        <td>
+            <span>10</span>
+            <span>미성년자</span>
+            <span>미성년자</span>
+        </td>
+    </tr>
+
+    <tr>
+        <td>2</td>
+        <td>UserB</td>
+        <td>
+            <span>20</span>
+            
+            
+        </td>
+    </tr>
+
+    <tr>
+        <td>3</td>
+        <td>UserC</td>
+        <td>
+            <span>30</span>
+            
+            
+        </td>
+    </tr>
+</table>
+
+<h1>switch</h1>
+<table border="1">
+    <tr>
+        <th>count</th>
+        <th>username</th>
+        <th>age</th>
+    </tr>
+
+    <tr>
+        <td>1</td>
+        <td>UserA</td>
+        <td>
+            <span>10살</span>
+            
+            
+        </td>
+    </tr>
+
+    <tr>
+        <td>2</td>
+        <td>UserB</td>
+        <td>
+            
+            <span>20살</span>
+            
+        </td>
+    </tr>
+
+    <tr>
+        <td>3</td>
+        <td>UserC</td>
+        <td>
+            
+            
+            <span>기타</span>
+        </td>
+    </tr>
+</table>
+</body>
+</html>
+```
+
+조건을 만족하지 않으면 태그 자체를 렌더링 하지 않는 것을 볼 수 있다. 
+
+### 10. 주석
+**BasicController 추가**
+
+```java
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.GetMapping;
+
+@GetMapping("/comments")
+public String comments(Model model) {
+  model.addAttribute("data", "Spring!");
+  return "basic/comments";
+}
+```
+
+`/resources/templates/basic/comments.html`
+```html
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+    <h1>예시</h1>
+    <span th:text="${data}">html data</span>
+
+    <h1>1. 표준 HTML 주석</h1>
+    <!--
+    <span th:text="${data}">html data</span>
+    -->
+
+    <h1>2. 타임리프 파서 주석</h1>
+    <!--/* [[${data}]] */-->
+
+    <!--/*-->
+    <span th:text="${data}">html data</span>
+    <!--*/-->
+
+    <h1>3. 타임리프 프로토타입 주석</h1>
+    <!--/*/
+    <span th:text="${data}">html data</span>
+    /*/-->
+</body>
+</html>
+```
+
+절대경로로 열어보는 것과 서버를 키고 화면에 렌더링 된 것 둘다 결과를 보자.
+
+먼저 첫번째는 절대 경로로 열어 본 것이다. 
+```text
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+    <h1>예시</h1>
+    <span th:text="${data}">html data</span>
+
+    <h1>1. 표준 HTML 주석</h1>
+    <!--
+    <span th:text="${data}">html data</span>
+    -->
+
+    <h1>2. 타임리프 파서 주석</h1>
+    <!--/* [[${data}]] */-->
+
+    <!--/*-->
+    <span th:text="${data}">html data</span>
+    <!--*/-->
+
+    <h1>3. 타임리프 프로토타입 주석</h1>
+    <!--/*/
+    <span th:text="${data}">html data</span>
+    /*/-->
+</body>
+</html>
+```
+
+다음은 서버를 키고 렌더링 했을 때이다. 
+
+```text
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+    <h1>예시</h1>
+    <span>Spring!</span>
+
+    <h1>1. 표준 HTML 주석</h1>
+    <!--
+    <span th:text="${data}">html data</span>
+    -->
+
+    <h1>2. 타임리프 파서 주석</h1>
+    
+
+    
+
+    <h1>3. 타임리프 프로토타입 주석</h1>
+    
+    <span>Spring!</span>
+    
+</body>
+</html>
+```
+
+두 결과물에서 두번째 결과물을 보면 타임리프 파서 주석은 2. 타임리프 파서 주석에서
+렌더링에서 주석 부분을 제거하는 것을 볼 수 있다.
+그리고 두번째 결과물에서 3. 타임리프 프로토타입 주석을 보면 HTML 파일을 그대로 열어보면 주석처리가 되지만,
+타임리프를 렌더링 한 경우에만 보이는 기능임을 알 수 있다.
+
+### 11. 블록
+`<th:block>`은 HTML 태그가 아닌 타임리프의 유일한 자체 태그다.
+
+**BasicController 추가**
+```java
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.GetMapping;
+
+@GetMapping("/block")
+public String block(Model model) {
+  addUsers(model);
+  return "basic/block";
+}
+```
+
+`/resources/templates/basic/block.html`
+```html
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+    <th:block th:each="user : ${users}">
+        <div>
+            사용자 이름1 <span th:text="${user.username}"></span>
+            사용자 나이1 <span th:text="${user.age}"></span>
+        </div>
+        
+        <div>
+            요약 <span th:text="${user.username} + '  /  ' + ${user.age}"></span>
+        </div>
+    </th:block>
+</body>
+</html>
+```
+
+실행 결과를 보자. 
+```text
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+    
+        <div>
+            사용자 이름1 <span>UserA</span>
+            사용자 나이1 <span>10</span>
+        </div>
+
+        <div>
+            요약 <span>UserA / 10</span>
+        </div>
+    
+        <div>
+            사용자 이름1 <span>UserB</span>
+            사용자 나이1 <span>20</span>
+        </div>
+
+        <div>
+            요약 <span>UserB / 20</span>
+        </div>
+    
+        <div>
+            사용자 이름1 <span>UserC</span>
+            사용자 나이1 <span>30</span>
+        </div>
+
+        <div>
+            요약 <span>UserC / 30</span>
+        </div>
+    
+</body>
+</html>
+```
+
+결과를 보면 렌더링 할 때, `<th:block>`은 없어지는 것을 볼 수 있다.
+만약에 `<div th:each="user : ${users}`를 작성한다면 div태그를 최상위에 둬야하므로 지저분해 보일 수 있다.
+그리고 방금 얘기한것처럼 하면 CSS 레이아웃에 불편함을 줄 수도 있다.
+따라서 여러 태그를 세트로 묶어서 깔끔하게 반복하고 싶을 때는 `<th:block>`을 쓰는게 좋다.
+
+
